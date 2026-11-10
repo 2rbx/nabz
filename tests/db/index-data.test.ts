@@ -54,7 +54,7 @@ async function heroAnswer(tx: Tx) {
     setId: set!.id,
     surveyId,
     weekStart: WEEK,
-    bolnaStatus: "completed",
+    executionStatus: "completed",
     statusRank: 10,
     derivedStatus: "completed",
     initiatedAt: new Date("2026-10-27T07:00:00Z"),

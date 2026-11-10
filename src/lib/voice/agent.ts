@@ -1,4 +1,4 @@
-import type { BolnaExecution } from "../bolna/client";
+import type { VoiceExecution } from "../calls/execution";
 import { OUTCOMES, TREND_VALUES } from "../domain/constants";
 import { extractionName, optionValues } from "../surveys/helpers";
 import type { Question, SurveyDefinition } from "../surveys/schema";
@@ -167,8 +167,8 @@ export type BuildExecutionInput = {
   recipientData?: Record<string, string>;
 };
 
-/** A finished conversation, in the shape of a completed Bolna execution. The ingest reads it unchanged. */
-export function buildExecution(input: BuildExecutionInput): BolnaExecution {
+/** A finished conversation, in the shape of a completed execution. The ingest reads it unchanged. */
+export function buildExecution(input: BuildExecutionInput): VoiceExecution {
   const e = (input.extraction && typeof input.extraction === "object" ? input.extraction : {}) as Extraction;
   const pulse: Record<string, unknown> = {};
   for (const q of input.def.questions) {
@@ -190,7 +190,7 @@ export function buildExecution(input: BuildExecutionInput): BolnaExecution {
     total_cost: input.costCents,
     transcript: transcriptText(input.turns),
     context_details: input.recipientData ? { recipient_data: input.recipientData } : null,
-    extracted_data: { Pulse: pulse } as BolnaExecution["extracted_data"],
+    extracted_data: { Pulse: pulse } as VoiceExecution["extracted_data"],
   };
 }
 

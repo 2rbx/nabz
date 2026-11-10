@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { BolnaExecution } from "../../bolna/client";
+import type { VoiceExecution } from "../execution";
 import { vehiclePulseV2 as def } from "../../surveys/definitions/vehicle-pulse.v2";
 import en01 from "./fixtures/en01-completed.json";
 import hi04Owner from "./fixtures/hi04-owner-stock-unclear.json";
@@ -7,9 +7,9 @@ import hi04Second from "./fixtures/hi04-second-number.json";
 import od01 from "./fixtures/od01-completed.json";
 import ta02 from "./fixtures/ta02-extraction-missing.json";
 import ta02Reextracted from "./fixtures/ta02-reextracted.json";
-import { bolnaTime, interpretExecution } from "./interpret";
+import { parseExecutionTime, interpretExecution } from "./interpret";
 
-const asExecution = (x: unknown) => x as BolnaExecution;
+const asExecution = (x: unknown) => x as VoiceExecution;
 const codes = (flags: { code: string }[]) => flags.map((f) => f.code).sort();
 
 /**
@@ -20,7 +20,7 @@ describe("real calls", () => {
   it("en01: a clean English call, all six answered", () => {
     const c = interpretExecution(def, asExecution(en01), null);
     expect(c).toMatchObject({
-      bolnaStatus: "completed",
+      executionStatus: "completed",
       terminal: true,
       derivedStatus: "completed",
       outcome: "completed",
@@ -43,7 +43,7 @@ describe("real calls", () => {
     });
     expect(codes(c.flags)).toEqual([]);
     expect(c.extracted.stock_days).toEqual({ raw: "15", value: 15, confidence: 0.95, valid: true, status: "answered" });
-    // initiated_at has no offset and is UTC; the call ended at Bolna's last update.
+    // initiated_at has no offset and is UTC; the call ended at the last update.
     expect(c.initiatedAt.toISOString()).toBe("2026-10-28T23:53:50.987Z");
     expect(c.endedAt?.toISOString()).toBe("2026-10-28T23:55:42.020Z");
     expect(c.startedAt?.toISOString()).toBe("2026-10-28T23:54:06.020Z");
@@ -59,12 +59,12 @@ describe("real calls", () => {
       discount_trend: "down",
       loan_rejections: "low",
     });
-    // Bolna returned an empty value and its companion said "unclear": a reason, not a bad value.
+    // The agent returned an empty value and its companion said "unclear": a reason, not a bad value.
     expect(c.extracted.stock_days).toEqual({ raw: null, value: null, confidence: null, valid: null, status: "unclear" });
     expect(codes(c.flags)).toEqual(["missing_answers"]);
   });
 
-  it("hi04 (second number): Bolna's own 'unclear' is recorded as such; a non-number count is a failed value", () => {
+  it("hi04 (second number): the agent's own 'unclear' is recorded as such; a non-number count is a failed value", () => {
     const c = interpretExecution(def, asExecution(hi04Second), null);
     expect(c).toMatchObject({
       derivedStatus: "completed",
@@ -78,10 +78,10 @@ describe("real calls", () => {
     expect(c.answers).toEqual({ bookings_trend: "same", stock_days: 15, discount_trend: "same", loan_rejections: "high" });
   });
 
-  it("od01: an Odia call, recorded as Bolna extracted it", () => {
+  it("od01: an Odia call, recorded as the voice agent extracted it", () => {
     const c = interpretExecution(def, asExecution(od01), null);
     expect(c).toMatchObject({ derivedStatus: "completed", answeredCount: 5, qaState: "auto_ok" });
-    // 2,000 is what was said and exactly the allowed maximum. Loans "high" is Bolna's (wrong) reading
+    // 2,000 is what was said and exactly the allowed maximum. Loans "high" is the agent's (wrong) reading
     // of "ସେତିକି" (the same), noted in the lab log; ingestion records what the extraction said.
     expect(c.answers).toMatchObject({ bookings_week: 2000, stock_days: 10, loan_rejections: "high" });
   });
@@ -102,7 +102,7 @@ describe("real calls", () => {
 });
 
 /** A small conversation to vary: two dealer lines and a Pulse built from `pulse`. */
-function call(patch: Partial<BolnaExecution> & { pulse?: Record<string, unknown> } = {}): BolnaExecution {
+function call(patch: Partial<VoiceExecution> & { pulse?: Record<string, unknown> } = {}): VoiceExecution {
   const { pulse, ...rest } = patch;
   return {
     id: "exec-1",
@@ -165,7 +165,7 @@ describe("statuses", () => {
     expect(c).toMatchObject({ derivedStatus: derived, terminal: true, qaState: "auto_ok", answeredCount: 0 });
   });
 
-  it("keeps Bolna's error message, or the termination reason, for a call that errored", () => {
+  it("keeps the agent's error message, or the termination reason, for a call that errored", () => {
     const c = interpretExecution(
       def,
       call({ status: "balance-low", conversation_duration: 0, transcript: null, termination_reason: "insufficient balance" }),
@@ -180,7 +180,7 @@ describe("statuses", () => {
 
   it("completed with nobody speaking is no answer, whatever the extraction says (spec L208)", () => {
     const silent = interpretExecution(def, call({ transcript: "assistant: Namaste.\nassistant: Hello?" }), null);
-    // Bolna may still return an extraction for it; with nobody speaking, it's a guess and is ignored.
+    // The voice agent may still return an extraction for it; with nobody speaking, it's a guess and is ignored.
     expect(silent).toMatchObject({ derivedStatus: "no_answer", answers: {}, answeredCount: 0, outcome: null });
     expect(interpretExecution(def, call({ conversation_duration: 0 }), null).derivedStatus).toBe("no_answer");
   });
@@ -256,7 +256,7 @@ describe("reading the extraction", () => {
   it.each([
     ["over the maximum", number("2500")],
     ["not a number", number("twenty")],
-    ["failed Bolna's validation", number("15", false)],
+    ["failed the agent's validation", number("15", false)],
     ["negative", number("-3")],
   ])("a count %s is a failed value: unclear and held for a person", (_label, value) => {
     const c = read({ stock_days: value });
@@ -274,7 +274,7 @@ describe("reading the extraction", () => {
     );
   });
 
-  it("choices: reasons, Bolna's unclear, the legacy not_answered, and unknown values", () => {
+  it("choices: reasons, the agent's unclear, the legacy not_answered, and unknown values", () => {
     expect(read({ loan_rejections: choice("dont_know") }).extracted.loan_rejections?.status).toBe("dont_know");
     expect(read({ loan_rejections: choice("declined") }).extracted.loan_rejections?.status).toBe("declined");
     expect(read({ loan_rejections: choice("unclear") }).extracted.loan_rejections).toMatchObject({
@@ -288,7 +288,7 @@ describe("reading the extraction", () => {
     expect(codes(unknown.flags)).toContain("invalid_answer");
   });
 
-  it("stores confidence only for answers (Bolna's 0 on empty fields would trigger low-confidence holds)", () => {
+  it("stores confidence only for answers (the agent's 0 on empty fields would trigger low-confidence holds)", () => {
     const c = read({ discount_trend: { objective: null, subjective: null, confidence: 0 } });
     expect(c.extracted.discount_trend).toMatchObject({ status: "not_asked", confidence: null });
     expect(codes(c.flags)).not.toContain("low_confidence");
@@ -303,12 +303,12 @@ describe("reading the extraction", () => {
     expect(c.answers).toMatchObject({ stock_days: 25 });
     expect(c.answers.loan_rejections).toBeUndefined();
     expect(c.answeredCount).toBe(4);
-    // A removed answer is unclear (a response), so the call stays completed; Bolna's reading is kept.
+    // A removed answer is unclear (a response), so the call stays completed; the agent's reading is kept.
     expect(c.derivedStatus).toBe("completed");
     expect(c.extracted.loan_rejections).toMatchObject({ value: "normal", status: "answered" });
   });
 
-  it("a corrected value is no longer held for Bolna's doubts about it", () => {
+  it("a corrected value is no longer held for the agent's doubts about it", () => {
     const pulse = { ...FULL, stock_days: number("twenty"), enquiries_trend: choice("up", 0.3) };
     const held = interpretExecution(def, call({ pulse }), null);
     expect(codes(held.flags)).toEqual(expect.arrayContaining(["invalid_answer", "low_confidence"]));
@@ -319,14 +319,14 @@ describe("reading the extraction", () => {
   });
 });
 
-describe("bolnaTime", () => {
-  it("reads Bolna's two timestamp styles", () => {
-    expect(bolnaTime("2026-10-28T23:46:23.891298")?.toISOString()).toBe("2026-10-28T23:46:23.891Z");
-    expect(bolnaTime("2026-10-28T23:46:23.891298+00:00")?.toISOString()).toBe("2026-10-28T23:46:23.891Z");
-    expect(bolnaTime("2026-10-29T05:16:23+05:30")?.toISOString()).toBe("2026-10-28T23:46:23.000Z");
-    expect(bolnaTime("")).toBeNull();
-    expect(bolnaTime("not a date")).toBeNull();
-    expect(bolnaTime(null)).toBeNull();
+describe("parseExecutionTime", () => {
+  it("reads the two timestamp styles", () => {
+    expect(parseExecutionTime("2026-10-28T23:46:23.891298")?.toISOString()).toBe("2026-10-28T23:46:23.891Z");
+    expect(parseExecutionTime("2026-10-28T23:46:23.891298+00:00")?.toISOString()).toBe("2026-10-28T23:46:23.891Z");
+    expect(parseExecutionTime("2026-10-29T05:16:23+05:30")?.toISOString()).toBe("2026-10-28T23:46:23.000Z");
+    expect(parseExecutionTime("")).toBeNull();
+    expect(parseExecutionTime("not a date")).toBeNull();
+    expect(parseExecutionTime(null)).toBeNull();
   });
 });
 
@@ -356,9 +356,9 @@ describe("the extraction fallback", () => {
     expect(c.flags).toEqual([expect.objectContaining({ code: "reextracted", severity: "info" })]);
   });
 
-  it("Bolna's own extraction always wins over a re-extraction", () => {
+  it("the agent's own extraction always wins over a re-extraction", () => {
     const c = interpretExecution(def, call(), null, { reextracted: { Pulse: { ...FULL, enquiries_trend: choice("down") } } });
-    expect(c).toMatchObject({ extractionSource: "bolna", answers: { enquiries_trend: "up" } });
+    expect(c).toMatchObject({ extractionSource: "agent", answers: { enquiries_trend: "up" } });
     expect(codes(c.flags)).not.toContain("reextracted");
   });
 

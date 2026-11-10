@@ -43,24 +43,6 @@ const eslintConfig = defineConfig([
     },
   },
   {
-    // Only src/lib/bolna/ may talk to Bolna. This is what makes the calling guards unavoidable.
-    files: ["src/**/*.{ts,tsx}", "scripts/**/*.ts"],
-    ignores: ["src/lib/bolna/**"],
-    rules: {
-      "no-restricted-syntax": [
-        "error",
-        {
-          selector: "Literal[value=/api\\.bolna\\.ai/i]",
-          message: "Bolna is only reachable through src/lib/bolna (the guarded dialer).",
-        },
-        {
-          selector: "TemplateElement[value.raw=/api\\.bolna\\.ai/i]",
-          message: "Bolna is only reachable through src/lib/bolna (the guarded dialer).",
-        },
-      ],
-    },
-  },
-  {
     // Gnani and Claude are reachable only through their guarded clients, which check the spend caps.
     files: ["src/**/*.{ts,tsx}", "scripts/**/*.ts"],
     ignores: ["src/lib/gnani/**", "src/lib/claude/**"],

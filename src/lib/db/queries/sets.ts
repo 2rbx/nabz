@@ -1,5 +1,5 @@
 import { and, asc, count, countDistinct, desc, eq, gte, inArray, sum } from "drizzle-orm";
-import { EXCLUSION_LABEL, type ExclusionCode } from "../../calls/set-plan";
+import { EXCLUSION_LABEL, type ExclusionCode } from "../../calls/set-status";
 import { FINAL_STATUS_RANK } from "../../calls/ingest/status";
 import { statusLabel, type Tone } from "../../calls/report";
 import { isUuid } from "../../domain/uuid";
@@ -158,8 +158,6 @@ export async function setDetail(db: Db, id: string) {
   return {
     set,
     rows,
-    /** The page keeps this set moving while it runs. */
-    live: running,
     counted: rows.filter((r) => r.state !== "skipped").length,
     finished: rows.filter((r) => r.state === "done" || r.state === "failed").length,
     costCents: setCalls.reduce((n, c) => n + (c.costCents ?? 0), 0),

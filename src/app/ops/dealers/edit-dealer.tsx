@@ -5,7 +5,6 @@ import { DialogHeader, dialogClass } from "@/components/dialog";
 import { Button } from "@/components/ui";
 import { type DealerFormState, type DealerFormValues, loadDealer, saveDealer } from "./actions";
 import { DealerForm } from "./dealer-form";
-import { TestCallPanel } from "./test-call";
 
 /**
  * The "Edit dealer" pop-up. Mounted fresh each time a row is opened (the table
@@ -23,7 +22,6 @@ export function EditDealer({
   const [state, action, pending] = useActionState<DealerFormState, FormData>(saveDealer, { status: "idle" });
   // undefined while loading; null when the dealer no longer exists.
   const [values, setValues] = useState<DealerFormValues | null | undefined>(undefined);
-  const [testing, setTesting] = useState(false);
 
   // Opening the native dialog and fetching are side effects of mounting.
   useEffect(() => {
@@ -57,10 +55,9 @@ export function EditDealer({
     >
       {values ? (
         <>
-          {/* Hidden rather than unmounted, so going Back keeps whatever was typed. */}
-          <div className={testing ? "hidden" : undefined}>
+          <div>
             <DealerForm
-              headingId={testing ? "edit-dealer-form-title" : "edit-dealer-title"}
+              headingId="edit-dealer-title"
               title="Edit dealer"
               description="Changes are saved to the panel. Nothing is called."
               submitLabel="Save"
@@ -70,21 +67,8 @@ export function EditDealer({
               errors={state.status === "error" ? state.errors : {}}
               hidden={{ dealerId }}
               onCancel={close}
-              footerStart={
-                <Button type="button" variant="secondary" onClick={() => setTesting(true)}>
-                  Test call
-                </Button>
-              }
             />
           </div>
-          {testing && (
-            <TestCallPanel
-              dealerId={dealerId}
-              headingId="edit-dealer-title"
-              onBack={() => setTesting(false)}
-              onClose={close}
-            />
-          )}
         </>
       ) : (
         <div className="grid gap-5 p-6">

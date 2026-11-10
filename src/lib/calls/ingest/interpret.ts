@@ -1,4 +1,4 @@
-import type { BolnaExecution } from "../../bolna/client";
+import type { VoiceExecution } from "../execution";
 import type { DerivedStatus, ExtractionSource, Outcome } from "../../domain/constants";
 import type { Answers } from "../../index/score";
 import { indexQuestionKeys } from "../../surveys/helpers";
@@ -10,12 +10,12 @@ import { readPulse } from "./fields";
 import { conversationHappened, deriveStatus, isTerminal, statusRank } from "./status";
 
 /**
- * Turns one Bolna execution into everything a stored call needs: statuses, times, cost, the
+ * Turns one execution into everything a stored call needs: statuses, times, cost, the
  * answers with the reason for each gap, and QA. Pure: the same execution always gives the same result, which is what makes ingestion safe to replay.
  */
 
 export type InterpretedCall = {
-  bolnaStatus: string;
+  executionStatus: string;
   statusRank: number;
   terminal: boolean;
   derivedStatus: DerivedStatus;
@@ -24,8 +24,8 @@ export type InterpretedCall = {
   initiatedAt: Date;
   startedAt: Date | null;
   endedAt: Date | null;
-  /** Bolna's last update of this execution; a later replay only applies if this moved forward. */
-  bolnaUpdatedAt: Date | null;
+  /** The last update of this execution; a later replay only applies if this moved forward. */
+  executionUpdatedAt: Date | null;
   durationS: number | null;
   /** US cents, as the wallet is charged (`total_cost`). */
   costCents: number | null;
@@ -47,10 +47,10 @@ export type InterpretedCall = {
 };
 
 /**
- * Bolna's timestamps: `created_at`/`updated_at` carry an offset, `initiated_at` doesn't (it is UTC,
+ * Timestamps: `created_at`/`updated_at` carry an offset, `initiated_at` doesn't (it is UTC,
  * as comparing it with `created_at` shows), so a bare one is read as UTC.
  */
-export function bolnaTime(value: unknown): Date | null {
+export function parseExecutionTime(value: unknown): Date | null {
   if (typeof value !== "string" || value.trim() === "") return null;
   const v = value.trim();
   const zoned = /(Z|[+-]\d{2}:?\d{2})$/.test(v) ? v : `${v}Z`;
@@ -78,7 +78,7 @@ export function applyOverrides(answers: Answers, overrides: Readonly<Record<stri
 
 /**
  * The extraction as ops' corrections leave it, for deciding the call's status and QA (the stored
- * `extracted` stays what Bolna returned). A corrected value was checked by a person, so Bolna's
+ * `extracted` stays what the agent returned). A corrected value was checked by a person, so the agent's
  * confidence and validity no longer apply to it; a removed one is unclear (the recording doesn't
  * support it), which is a response, so it doesn't make the call partial.
  */
@@ -106,7 +106,7 @@ export type InterpretOptions = {
 
 export function interpretExecution(
   definition: SurveyDefinition,
-  execution: BolnaExecution,
+  execution: VoiceExecution,
   previousAnswers: Answers | null,
   { overrides = {}, reextracted = null }: InterpretOptions = {},
 ): InterpretedCall {
@@ -114,22 +114,22 @@ export function interpretExecution(
   const terminal = isTerminal(status);
   const telephony = (execution.telephony_data ?? {}) as Record<string, unknown>;
   const durationS = num(execution.conversation_duration);
-  const initiatedAt = bolnaTime(execution.initiated_at) ?? bolnaTime(execution.created_at) ?? new Date(0);
-  const bolnaUpdatedAt = bolnaTime(execution.updated_at);
-  const endedAt = terminal ? bolnaUpdatedAt : null;
+  const initiatedAt = parseExecutionTime(execution.initiated_at) ?? parseExecutionTime(execution.created_at) ?? new Date(0);
+  const executionUpdatedAt = parseExecutionTime(execution.updated_at);
+  const endedAt = terminal ? executionUpdatedAt : null;
   const conversed = terminal && status === "completed" && conversationHappened(execution);
   const startedAt = conversed && endedAt && durationS ? new Date(endedAt.getTime() - durationS * 1000) : null;
   const voicemail = typeof execution.answered_by_voice_mail === "boolean" ? execution.answered_by_voice_mail : null;
 
   const base = {
-    bolnaStatus: status,
+    executionStatus: status,
     statusRank: statusRank(status),
     terminal,
     answeredByVoicemail: voicemail,
     initiatedAt,
     startedAt,
     endedAt,
-    bolnaUpdatedAt,
+    executionUpdatedAt,
     durationS,
     costCents: num(execution.total_cost),
     costBreakdown: (execution.cost_breakdown as Record<string, unknown> | null | undefined) ?? null,
@@ -138,11 +138,11 @@ export function interpretExecution(
     transcript: str(execution.transcript),
   };
 
-  // Only a real conversation has answers: whatever Bolna extracts from a call nobody spoke on is a guess.
-  // Bolna's own extraction wins whenever it has one (including one that arrives late); the fallback's
-  // re-reading of the transcript is used only when Bolna's came back empty.
+  // Only a real conversation has answers: whatever the voice agent extracts from a call nobody spoke on is a guess.
+  // The agent's own extraction wins whenever it has one (including one that arrives late); the fallback's
+  // re-reading of the transcript is used only when the agent's came back empty.
   let pulse = readPulse(definition, conversed ? execution.extracted_data : null);
-  let extractionSource: ExtractionSource | null = conversed && !pulse.empty ? "bolna" : null;
+  let extractionSource: ExtractionSource | null = conversed && !pulse.empty ? "agent" : null;
   if (conversed && pulse.empty && reextracted) {
     const fallback = readPulse(definition, reextracted);
     if (!fallback.empty) {
@@ -192,7 +192,7 @@ export function interpretExecution(
       code: "extraction_missing",
       severity: "hold",
       questionKey: null,
-      detail: "Bolna returned no extraction for this conversation",
+      detail: "The agent returned no extraction for this conversation",
     });
     if (qaState === "auto_ok") qaState = "needs_review";
   }
@@ -202,7 +202,7 @@ export function interpretExecution(
       code: "reextracted",
       severity: "info",
       questionKey: null,
-      detail: "Bolna's extraction came back empty; the answers were read from the transcript",
+      detail: "The agent's extraction came back empty; the answers were read from the transcript",
     });
   }
 

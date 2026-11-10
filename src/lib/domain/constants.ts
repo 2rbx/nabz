@@ -8,7 +8,7 @@ export const OUTCOMES = ["completed", "partial", "refused", "callback", "wrong_n
 export type Outcome = (typeof OUTCOMES)[number];
 
 /**
- * A word the frozen survey versions and their Bolna agents can still return. To us it's a refusal
+ * A word the frozen survey versions and their voice agents can still return. To us it's a refusal
  * (src/lib/calls/ingest/fields.ts), never a status of its own.
  */
 export const AGENT_ONLY_OUTCOME = "opted_out";
@@ -29,7 +29,7 @@ export const ANSWER_STATUSES = ["answered", ...MISSING_REASONS, "unclear"] as co
 export type AnswerStatus = (typeof ANSWER_STATUSES)[number];
 
 /**
- * Our status for a call (spec §5.3): where it is in its life, or how it ended. Derived from Bolna's
+ * Our status for a call (spec §5.3): where it is in its life, or how it ended. Derived from the agent's
  * status and, for real conversations, from what the dealer answered (src/lib/calls/ingest/status.ts).
  */
 export const DERIVED_STATUSES = [
@@ -49,10 +49,10 @@ export const DERIVED_STATUSES = [
 export type DerivedStatus = (typeof DERIVED_STATUSES)[number];
 
 /**
- * Where a call's answers came from: Bolna's own extraction, or our fallback re-reading the stored
- * transcript with the same agent's extractions when Bolna's came back empty.
+ * Where a call's answers came from: the agent's own extraction, or our fallback re-reading the stored
+ * transcript with the same agent's extractions when the agent's came back empty.
  */
-export const EXTRACTION_SOURCES = ["bolna", "reextract"] as const;
+export const EXTRACTION_SOURCES = ["agent", "reextract"] as const;
 export type ExtractionSource = (typeof EXTRACTION_SOURCES)[number];
 
 export const TREND_VALUES = ["up", "same", "down"] as const;

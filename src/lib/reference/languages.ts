@@ -1,10 +1,9 @@
 /**
- * The languages Nabz can call a dealer in: one call agent each (call-lab: hi04, en01, ta02, bn01, …).
- * A dealer's `language` is always one of these, and it is the language we always call them in.
+ * The languages a dealer can be recorded as speaking. A dealer's `language` is always one of these, and
+ * it is the language we always call them in. The voice agent speaks Hindi and English today; the others
+ * are in the data model so more can be added without a migration.
  *
- * Codes are BCP 47. Bolna's Sarvam setup uses its own code for Odia ("od"), kept here so the mapping
- * lives in one place. Urdu isn't listed: Bolna has no Sarvam Urdu, so there is no Urdu agent (the
- * Hindi agent covers spoken Urdu).
+ * Codes are BCP 47. Urdu isn't listed: Hindi covers spoken Urdu.
  */
 export const CALL_LANGUAGES = [
   { code: "en", name: "English", label: "English" },

@@ -29,7 +29,7 @@ export const STATUS_FIELD_SUFFIX = "_status";
 
 const REASONS = new Set<string>(MISSING_REASONS);
 
-/** Reads a missing reason from a raw extraction value (e.g. Bolna's objective option). */
+/** Reads a missing reason from a raw extraction value (e.g. the agent's objective option). */
 export function parseMissingReason(raw: unknown): MissingReason | null {
   if (typeof raw !== "string") return null;
   const v = raw.trim().toLowerCase();

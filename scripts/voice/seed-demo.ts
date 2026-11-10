@@ -79,7 +79,7 @@ async function setup(db: ReturnType<typeof createDb>["db"]): Promise<{ plans: Pl
   if (!surveyRow) throw new Error("Survey vehicle_pulse v2 isn't synced. Run pnpm db:setup.");
   const survey = surveyRow.definition as SurveyDefinition;
 
-  let [agent] = await db.select().from(agentVersions).where(and(eq(agentVersions.bolnaAgentId, AGENT_ID), eq(agentVersions.surveyId, surveyRow.id)));
+  let [agent] = await db.select().from(agentVersions).where(and(eq(agentVersions.agentRef, AGENT_ID), eq(agentVersions.surveyId, surveyRow.id)));
   if (!agent) {
     const config = {
       stack: "Gnani Prisma (speech to text) + Gnani Timbre (text to speech) + Claude (conversation and extraction)",
@@ -94,7 +94,7 @@ async function setup(db: ReturnType<typeof createDb>["db"]): Promise<{ plans: Pl
         surveyId: surveyRow.id,
         language: "hi",
         label: "gn01",
-        bolnaAgentId: AGENT_ID,
+        agentRef: AGENT_ID,
         version: 1,
         config,
         configSha256: createHash("sha256").update(JSON.stringify(config)).digest("hex"),

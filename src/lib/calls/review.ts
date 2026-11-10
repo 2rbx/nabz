@@ -8,7 +8,7 @@ import { NOT_ANSWERED, NOT_FINISHED, type Tone } from "./report";
  * - Approve: a call held for review counts in the index.
  * - Exclude: a call never counts.
  * - Fix an answer: one answer is corrected (kept as an append-only override with its reason), and
- *   the call's checks run again from Bolna's stored execution.
+ *   the call's checks run again from the stored execution.
  */
 
 export type QaState = "pending" | "auto_ok" | "needs_review" | "approved" | "excluded";
@@ -38,7 +38,7 @@ export function reviewable(call: { derivedStatus: string; statusRank: number }):
 }
 
 /**
- * A call whose answers can be corrected: reviewable, and with Bolna's execution stored (the checks
+ * A call whose answers can be corrected: reviewable, and with the execution stored (the checks
  * run again from it).
  */
 export function correctable(call: {
@@ -49,7 +49,7 @@ export function correctable(call: {
   return reviewable(call) && call.hasRawExecution;
 }
 
-/** What ops types for "not answered" (the answer is removed; the call keeps Bolna's reading). */
+/** What ops types for "not answered" (the answer is removed; the call keeps the agent's reading). */
 export const NOT_ANSWERED_INPUT = "not_answered";
 
 export type ParsedCorrection = { ok: true; value: string | number | null } | { ok: false; error: string };

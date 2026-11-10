@@ -9,11 +9,8 @@ export type CallingMode = (typeof CALLING_MODES)[number];
 
 export type CallingScope = { mode: CallingMode; allowedNumbers: readonly string[] };
 
-/** For code that only reads from Bolna: it can never place a call. */
-export const NO_NUMBERS: CallingScope = { mode: "testing", allowedNumbers: [] };
-
 const HOW_TO_ALLOW =
-  "To test with a number, add it to ALLOWED_NUMBERS in .env.local and restart the app. To call any number, set NABZ_MODE=production and use a premium Bolna API key. See the README for the full steps.";
+  "To test with a number, add it to ALLOWED_NUMBERS in .env.local and restart the app. To allow any number, set NABZ_MODE=production. See the README.";
 
 export const NUMBER_NOT_ALLOWED = `This number isn't allowed in testing mode. ${HOW_TO_ALLOW}`;
 export const BATCH_NOT_ALLOWED = `No number in this batch is allowed in testing mode. ${HOW_TO_ALLOW}`;
@@ -39,5 +36,4 @@ export function dealerNumberRefusal(
 export const CALLING_LIMITS = {
   /** The most dealers a batch can hold. */
   maxBatchSize: 500,
-  maxDailySpendUsd: 10,
 } as const;

@@ -1,8 +1,6 @@
 "use server";
 
 import { refresh } from "next/cache";
-import { placeTestCall, type TestCallPreview, type TestCallResult, testCallPreview } from "@/lib/bolna/dialer";
-import { bolnaFromEnv, dialerConfigFromEnv } from "@/lib/bolna/server";
 import { dealerNumberRefusal } from "@/lib/calling-policy";
 import { db } from "@/lib/db/client";
 import { createDealer, getDealer, updateDealer } from "@/lib/db/queries/dealers";
@@ -80,16 +78,4 @@ export async function saveDealer(_prev: DealerFormState, formData: FormData): Pr
 
   refresh();
   return { status: "saved", name: parsed.dealer.businessName, savedAt: Date.now() };
-}
-
-/** What a test call to this dealer would do, or why it can't be placed. Writes nothing. */
-export async function previewTestCall(dealerId: string): Promise<TestCallPreview> {
-  return testCallPreview(db(), dealerId, dialerConfigFromEnv());
-}
-
-/** Places one test call. It changes no data: the only row written is its line in the dialer log. */
-export async function startTestCall(dealerId: string): Promise<TestCallResult> {
-  const bolna = bolnaFromEnv();
-  if (!bolna) return { status: "refused", message: "Bolna's API key isn't set (BOLNA_API_KEY)." };
-  return placeTestCall(db(), bolna, dealerId, dialerConfigFromEnv());
 }

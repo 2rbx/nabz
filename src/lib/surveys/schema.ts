@@ -23,9 +23,9 @@ const Score = z.number().int().min(0).max(100);
 
 const Severity = z.enum(SEVERITIES);
 
-/** How the voice agent's extractor should capture an answer. Mapped to Bolna extractions in step 4. */
+/** How the voice agent's extractor should capture an answer. */
 const Extraction = z.strictObject({
-  /** Extraction name on Bolna. Defaults to the question key. */
+  /** Extraction name. Defaults to the question key. */
   name: Key.optional(),
   /** Instruction for the extractor. Must tell it to leave the field empty when not answered. */
   instruction: z.string().min(20),

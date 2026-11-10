@@ -51,7 +51,7 @@ describe("what can be reviewed", () => {
     expect(reviewable({ derivedStatus: "completed", statusRank: 5 })).toBe(false);
   });
 
-  it("only calls with Bolna's execution can be corrected", () => {
+  it("only calls with the execution can be corrected", () => {
     const call = { derivedStatus: "completed", statusRank: 10, hasRawExecution: true };
     expect(correctable(call)).toBe(true);
     expect(correctable({ ...call, hasRawExecution: false })).toBe(false);
@@ -69,7 +69,7 @@ describe("labels", () => {
 });
 
 describe("hangupLabel", () => {
-  it("names who ended the call, as Bolna reports it on our calls", () => {
+  it("names who ended the call, as the voice agent reports it on our calls", () => {
     expect(hangupLabel("Callee", "Call recipient hungup")).toBe("Dealer");
     expect(hangupLabel("Plivo", "end_call_tool")).toBe("Agent");
     expect(hangupLabel("Plivo", "inactivity_timeout")).toBe("Agent, after silence");

@@ -21,10 +21,6 @@
     "db:setup": "pnpm db:migrate && pnpm db:sync",
     "db:studio": "drizzle-kit studio",
     "check": "pnpm typecheck && pnpm lint && pnpm test && pnpm build",
-    "agents:create": "tsx scripts/db/agents-create.ts",
-    "agents:sync": "tsx scripts/db/agents-sync.ts",
-    "calls:sync": "tsx scripts/db/calls-sync.ts",
-    "calls:watch": "tsx scripts/db/calls-sync.ts --watch",
     "voice:smoke": "tsx scripts/voice/smoke.ts",
     "voice:simulate": "tsx scripts/voice/simulate.ts",
     "voice:seed": "tsx scripts/voice/seed-demo.ts"

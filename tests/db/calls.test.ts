@@ -54,7 +54,7 @@ function callRow(f: Awaited<ReturnType<typeof fixture>>, patch: Partial<typeof c
     setId: f.setId,
     surveyId: f.surveyId,
     weekStart: "2026-10-26",
-    bolnaStatus: "completed",
+    executionStatus: "completed",
     statusRank: 10,
     derivedStatus: "completed" as const,
     initiatedAt: new Date("2026-10-27T05:00:00Z"),
@@ -72,7 +72,7 @@ describe("listCalls", () => {
         // Never connected: ordered by when it was placed.
         callRow(f, {
           derivedStatus: "no_answer",
-          bolnaStatus: "no-answer",
+          executionStatus: "no-answer",
           initiatedAt: new Date("2026-10-29T06:00:00Z"),
         }),
       ]);

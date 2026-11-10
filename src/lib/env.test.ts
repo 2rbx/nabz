@@ -6,32 +6,12 @@ const base = {
 };
 
 describe("parseEnv", () => {
-  it("defaults every safety setting to the safe value", () => {
-    const env = parseEnv(base);
-    expect(env.CALLING_ENABLED).toBe(false);
-    expect(env.BOLNA_DAILY_SPEND_CAP_USD).toBe(10);
+  it("defaults to the safe mode", () => {
+    expect(parseEnv(base).NABZ_MODE).toBe("testing");
   });
 
   it("treats empty values as unset", () => {
-    expect(parseEnv({ ...base, CALLING_ENABLED: "" }).CALLING_ENABLED).toBe(false);
-  });
-
-  it.each(["0", "1", "yes", "TRUE", "on"])("rejects CALLING_ENABLED=%j (only exact true/false)", (value) => {
-    expect(() => parseEnv({ ...base, CALLING_ENABLED: value })).toThrow(/CALLING_ENABLED/);
-  });
-
-  it("caps batch size and spend", () => {
-    expect(() => parseEnv({ ...base, BOLNA_DAILY_SPEND_CAP_USD: "11" })).toThrow(/BOLNA_DAILY_SPEND_CAP_USD/);
-  });
-
-  it("requires Bolna credentials only when calling is enabled", () => {
-    expect(() => parseEnv({ ...base, CALLING_ENABLED: "true" })).toThrow(/BOLNA_API_KEY/);
-    const env = parseEnv({
-      ...base,
-      CALLING_ENABLED: "true",
-      BOLNA_API_KEY: "bn-test",
-    });
-    expect(env.CALLING_ENABLED).toBe(true);
+    expect(parseEnv({ ...base, NABZ_MODE: "" }).NABZ_MODE).toBe("testing");
   });
 
   it("requires a postgres URL", () => {
@@ -55,7 +35,4 @@ describe("NABZ_MODE and ALLOWED_NUMBERS", () => {
     expect(() => parseEnv({ ...base, ALLOWED_NUMBERS: "9000012345,nope" })).toThrow(/ALLOWED_NUMBERS/);
   });
 
-  it("caps daily spend at $10 by default", () => {
-    expect(parseEnv(base).BOLNA_DAILY_SPEND_CAP_USD).toBe(10);
-  });
 });

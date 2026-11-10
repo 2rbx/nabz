@@ -1,9 +1,6 @@
 import { existsSync } from "node:fs";
 import { resolve } from "node:path";
 
-/** Ids of agents made by `pnpm agents:create`, used instead of the registry's. Not committed. */
-export const AGENTS_LOCAL_FILE = "agents.local.json";
-
 /**
  * Loads .env.local for scripts (Next.js does this itself for the app). Values already present in the
  * environment win, so a caller can always override, e.g. DATABASE_URL for the test database.

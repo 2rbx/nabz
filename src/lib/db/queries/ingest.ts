@@ -1,6 +1,6 @@
 import { and, asc, count, eq, isNull, lt, notExists } from "drizzle-orm";
-import type { BolnaExecution } from "../../bolna/client";
-import { bolnaTime, interpretExecution } from "../../calls/ingest/interpret";
+import type { VoiceExecution } from "../../calls/execution";
+import { parseExecutionTime, interpretExecution } from "../../calls/ingest/interpret";
 import { FINAL_STATUS_RANK, statusRank } from "../../calls/ingest/status";
 import { isUuid } from "../../domain/uuid";
 import type { SurveyDefinition } from "../../surveys/schema";
@@ -9,7 +9,7 @@ import { answerOverrides, callFlags, calls, executionEvents, setRecipients, sets
 import { previousWeekAnswers } from "./calls";
 
 /**
- * The one way a Bolna execution becomes a call in our database (spec §5.3). It is safe to replay: an
+ * The one way a execution becomes a call in our database (spec §5.3). It is safe to replay: an
  * event older than what we stored, or the same event again, changes nothing.
  *
  * Every event is recorded first (execution_events, with the raw payload), then interpreted and applied
@@ -21,15 +21,15 @@ import { previousWeekAnswers } from "./calls";
 export type DbConn = Pick<Db, "select" | "insert" | "update" | "delete" | "transaction">;
 
 export type IngestContext = {
-  /** Bolna agents we own. Executions from any other agent are rejected (spec §8.3). */
+  /** voice agents we own. Executions from any other agent are rejected (spec §8.3). */
   ourAgentIds: ReadonlySet<string>;
   /**
    * Links an execution that doesn't carry our call reference to a recipient. Normally the reference
-   * Bolna echoes back in `recipient_data.nabz_call_ref` does this.
+   * the voice agent echoes back in `recipient_data.nabz_call_ref` does this.
    */
   recipientId?: string;
   /**
-   * The fallback's re-extraction of this call's transcript (collect.ts), applied even though Bolna's
+   * The fallback's re-extraction of this call's transcript, applied even though the agent's
    * execution itself hasn't changed. Stored, so later replays read the call the same way.
    */
   reextracted?: { data: Record<string, unknown>; at: Date };
@@ -45,17 +45,17 @@ export type IngestResult = {
   eventId: string;
 };
 
-function callRefOf(execution: BolnaExecution): string | null {
+function callRefOf(execution: VoiceExecution): string | null {
   const ref = execution.context_details?.recipient_data?.nabz_call_ref;
   return typeof ref === "string" && isUuid(ref) ? ref : null;
 }
 
-export async function ingestExecution(db: DbConn, execution: BolnaExecution, ctx: IngestContext): Promise<IngestResult> {
+export async function ingestExecution(db: DbConn, execution: VoiceExecution, ctx: IngestContext): Promise<IngestResult> {
   const [event] = await db
     .insert(executionEvents)
     .values({
       executionId: typeof execution.id === "string" ? execution.id : null,
-      bolnaStatus: typeof execution.status === "string" ? execution.status : null,
+      executionStatus: typeof execution.status === "string" ? execution.status : null,
       payload: execution as Record<string, unknown>,
     })
     .returning({ id: executionEvents.id });
@@ -78,15 +78,15 @@ export async function ingestExecution(db: DbConn, execution: BolnaExecution, ctx
 }
 
 /**
- * Re-reads a stored call from its stored Bolna execution, inside the caller's transaction: after ops
+ * Re-reads a stored call from its stored execution, inside the caller's transaction: after ops
  * correct an answer, the answers, flags and QA state are recomputed exactly as ingestion computes
- * them. No event is recorded (nothing came from Bolna), and the call's own agent is trusted
+ * them. No event is recorded (nothing came from the voice agent), and the call's own agent is trusted
  * (the call was accepted when it arrived). A decision a person already made stands.
  */
 export async function reinterpretCall(tx: DbConn, callId: string): Promise<void> {
   const [row] = await tx.select({ raw: calls.rawExecution }).from(calls).where(eq(calls.id, callId));
-  const execution = row?.raw as BolnaExecution | null | undefined;
-  if (!execution) throw new Error("This call has no stored Bolna execution to re-read.");
+  const execution = row?.raw as VoiceExecution | null | undefined;
+  if (!execution) throw new Error("This call has no stored execution to re-read.");
   const result = await applyExecution(tx, execution, {
     ourAgentIds: new Set([execution.agent_id]),
     reapply: true,
@@ -98,7 +98,7 @@ export async function reinterpretCall(tx: DbConn, callId: string): Promise<void>
 
 async function applyExecution(
   tx: DbConn,
-  execution: BolnaExecution,
+  execution: VoiceExecution,
   ctx: IngestContext,
 ): Promise<Omit<IngestResult, "eventId">> {
   if (typeof execution.id !== "string" || !execution.id || typeof execution.status !== "string") {
@@ -107,7 +107,7 @@ async function applyExecution(
   if (!ctx.ourAgentIds.has(execution.agent_id)) return { result: "rejected", callId: null };
 
   // Link: the call we already have for this execution, else the recipient we were told, else our
-  // call reference echoed back by Bolna.
+  // call reference echoed back by the voice agent.
   const [existing] = await tx.select().from(calls).where(eq(calls.executionId, execution.id)).limit(1);
   let recipientId = existing?.setRecipientId ?? ctx.recipientId ?? null;
   if (!recipientId) {
@@ -141,14 +141,14 @@ async function applyExecution(
   if (!link) return { result: "unlinked", callId: null };
   const definition = link.definition as SurveyDefinition;
 
-  // Never move backwards: an older status, or the same one Bolna hasn't changed since, is stale.
+  // Never move backwards: an older status, or the same one the voice agent hasn't changed since, is stale.
   if (existing) {
     const rank = statusRank(execution.status);
-    const updatedAt = bolnaTime(execution.updated_at);
+    const updatedAt = parseExecutionTime(execution.updated_at);
     const older = rank < existing.statusRank;
     const unchanged =
       rank === existing.statusRank &&
-      (!updatedAt || (existing.bolnaUpdatedAt !== null && updatedAt <= existing.bolnaUpdatedAt));
+      (!updatedAt || (existing.executionUpdatedAt !== null && updatedAt <= existing.executionUpdatedAt));
     // A re-extraction is new information about an unchanged execution: it always applies.
     if (older || (unchanged && !ctx.reextracted && !ctx.reapply)) return { result: "stale", callId: existing.id };
   }
@@ -174,7 +174,7 @@ async function applyExecution(
   // A person's QA decision stands; the automatic checks are still recomputed and shown.
   const reviewed = Boolean(existing?.qaReviewedAt);
   const values = {
-    bolnaStatus: c.bolnaStatus,
+    executionStatus: c.executionStatus,
     statusRank: c.statusRank,
     derivedStatus: c.derivedStatus,
     outcome: c.outcome,
@@ -197,7 +197,7 @@ async function applyExecution(
     ...(ctx.reextracted ? { reextractedData: ctx.reextracted.data, reextractedAt: ctx.reextracted.at } : {}),
     qaState: reviewed && existing ? existing.qaState : c.qaState,
     rawExecution: execution as Record<string, unknown>,
-    bolnaUpdatedAt: c.bolnaUpdatedAt,
+    executionUpdatedAt: c.executionUpdatedAt,
   };
 
   let callId: string;

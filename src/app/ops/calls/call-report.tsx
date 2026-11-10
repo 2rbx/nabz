@@ -63,7 +63,7 @@ export function CallReport({ detail }: { detail: CallDetail }) {
     ["Duration", formatDuration(call.durationS)],
     [
       "Cost",
-      <span key="c" title={`${cost.usd} on Bolna (₹ is approximate)`}>
+      <span key="c" title={`${cost.usd} on the voice stack (₹ is approximate)`}>
         {cost.inr}
       </span>,
     ],
@@ -71,7 +71,7 @@ export function CallReport({ detail }: { detail: CallDetail }) {
   ];
   if (hungUp) summary.push(["Hung up by", hungUp]);
   if (call.extractionSource) {
-    summary.push(["Answers from", call.extractionSource === "reextract" ? "Re-read from the transcript" : "Bolna"]);
+    summary.push(["Answers from", call.extractionSource === "reextract" ? "Re-read from the transcript" : "the voice agent"]);
   }
   if (canReview) {
     summary.push([

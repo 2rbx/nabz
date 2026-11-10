@@ -180,7 +180,7 @@ describe("buildCallReport: what changed", () => {
 });
 
 describe("parseTranscript", () => {
-  it("splits Bolna's assistant/user lines into turns and joins wrapped lines", () => {
+  it("splits the agent's assistant/user lines into turns and joins wrapped lines", () => {
     expect(
       parseTranscript(
         "assistant: Namaste, main Nabz ki AI assistant hoon.\nuser: Haan boliye\nassistant: Enquiries\nbadhi ya kam?\n\nuser:",

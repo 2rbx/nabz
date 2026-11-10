@@ -34,7 +34,7 @@ export function indexQuestionKeys(def: Pick<SurveyDefinition, "indicators">): st
   return [...new Set(def.indicators.map((i) => i.rule.question))];
 }
 
-/** The Bolna extraction name for a question (defaults to its key). */
+/** The extraction name for a question (defaults to its key). */
 export function extractionName(q: Question): string {
   return q.extraction.name ?? q.key;
 }

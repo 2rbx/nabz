@@ -6,9 +6,9 @@ export const PLATFORM_QA_CODES = [
   "low_confidence",
   "false_completed",
   "missing_answers",
-  // Set by ingestion, not evaluateQa: Bolna returned no extraction for a real conversation.
+  // Set by ingestion, not evaluateQa: the agent returned no extraction for a real conversation.
   "extraction_missing",
-  // Set by ingestion: Bolna's extraction was empty and the answers were re-read from the transcript.
+  // Set by ingestion: the agent's extraction was empty and the answers were re-read from the transcript.
   "reextracted",
 ] as const;
 

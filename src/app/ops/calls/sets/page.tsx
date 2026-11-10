@@ -20,7 +20,7 @@ import { db } from "@/lib/db/client";
 import { setStatusLabel } from "@/lib/calls/set-status";
 import { listSets, SETS_PAGE_SIZE, setDetail } from "@/lib/db/queries/sets";
 import { formatCost, formatIstDateTime, formatWeekShort } from "@/lib/format";
-import { LiveSet } from "./live-set";
+import { SetView } from "./set-view";
 
 export const metadata: Metadata = { title: "Sets" };
 
@@ -49,7 +49,7 @@ async function SetsBody({ searchParams }: { searchParams: SearchParams }) {
         ← All sets
       </Link>
       {detail ? (
-        <LiveSet key={params.set} id={params.set} initial={detail} />
+        <SetView key={params.set} id={params.set} detail={detail} />
       ) : (
         <Panel className="py-14 text-center text-sm text-faint">
           This set doesn&apos;t exist, or the link is out of date.
@@ -70,7 +70,7 @@ async function SetsTable({ params }: { params: Awaited<SearchParams> }) {
     <Panel flush>
       {rows.length === 0 ? (
         <p className="px-5 py-14 text-center text-sm text-faint">
-          No sets yet. Press Call on a batch to start one.
+          No sets yet. Run `pnpm voice:seed` to fill the demo with synthetic calls.
         </p>
       ) : (
         <TableScroll>

@@ -1,16 +1,11 @@
 import { z } from "zod";
-import { CALLING_LIMITS, CALLING_MODES, type CallingScope } from "./calling-policy";
+import { CALLING_MODES, type CallingScope } from "./calling-policy";
 import { normalisePhone } from "./domain/phone";
 
 /**
  * The only module that reads process.env (enforced by ESLint). Everything is validated up front,
  * and every safety-relevant setting defaults to the safe value.
  */
-
-const bool = z
-  .enum(["true", "false"], { message: 'must be exactly "true" or "false"' })
-  .default("false")
-  .transform((v) => v === "true");
 
 const postgresUrl = z
   .string()
@@ -41,24 +36,10 @@ export const EnvSchema = z
     NABZ_MODE: z.enum(CALLING_MODES).default("testing"),
     ALLOWED_NUMBERS: phoneList,
 
-    /** Kill switch for every outbound call. Off unless explicitly "true". */
-    CALLING_ENABLED: bool,
-    BOLNA_DAILY_SPEND_CAP_USD: z.coerce.number().positive().max(CALLING_LIMITS.maxDailySpendUsd).default(10),
-
-    BOLNA_API_KEY: z.string().min(1).optional(),
 
     /** The Gnani voice agent (Prisma speech to text, Timbre text to speech) and the Claude brain behind it. */
     GNANI_API_KEY: z.string().min(1).optional(),
     CLAUDE_API_KEY: z.string().min(1).optional(),
-  })
-  .superRefine((env, ctx) => {
-    if (env.CALLING_ENABLED && !env.BOLNA_API_KEY) {
-      ctx.addIssue({
-        code: "custom",
-        path: ["BOLNA_API_KEY"],
-        message: "required when CALLING_ENABLED=true",
-      });
-    }
   });
 
 export type Env = z.infer<typeof EnvSchema>;

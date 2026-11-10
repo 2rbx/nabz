@@ -1,30 +1,8 @@
 "use server";
 
 import { refresh } from "next/cache";
-import { bolnaFromEnv, dialerConfigFromEnv } from "@/lib/bolna/server";
-import { advanceSet, stopSet } from "@/lib/bolna/set-dialer";
 import { db } from "@/lib/db/client";
-import { collectCalls, describeCollection } from "@/lib/db/collect";
 import { correctAnswer, reviewCall } from "@/lib/db/queries/review";
-import { type SetDetail, setDetail } from "@/lib/db/queries/sets";
-
-/** The result of pressing Sync calls; `at` tells repeated results apart. */
-export type SyncState = { status: "idle" } | { status: "done" | "error"; message: string; at: number };
-
-/** Fetches every unfinished call from Bolna and stores the results (reads only: never dials). */
-export async function syncCalls(_prev: SyncState): Promise<SyncState> {
-  const bolna = bolnaFromEnv();
-  if (!bolna) {
-    return { status: "error", message: "Bolna's API key isn't set (BOLNA_API_KEY), so calls can't be synced.", at: Date.now() };
-  }
-  try {
-    const summary = await collectCalls(db(), bolna);
-    refresh();
-    return { status: summary.errors.length ? "error" : "done", message: describeCollection(summary), at: Date.now() };
-  } catch (error) {
-    return { status: "error", message: `Sync failed: ${error instanceof Error ? error.message : String(error)}`, at: Date.now() };
-  }
-}
 
 /** The result of a review action (approve / exclude, or a corrected answer); `at` tells results apart. */
 export type ReviewState = { status: "idle" } | { status: "done" | "error"; message: string; at: number };
@@ -65,17 +43,4 @@ export async function correctAnswerAction(_prev: ReviewState, formData: FormData
   if (!result.ok) return { status: "error", message: result.error, at: Date.now() };
   refresh();
   return { status: "done", message: "Answer corrected and the call re-checked.", at: Date.now() };
-}
-
-/** One step of a live set: the current call's news, then the next row's call if nothing is ringing. */
-export async function advanceSetAction(id: string): Promise<SetDetail | null> {
-  const bolna = bolnaFromEnv();
-  if (bolna) await advanceSet(db(), bolna, id, dialerConfigFromEnv());
-  return setDetail(db(), id);
-}
-
-/** No further calls in this set. The call in progress finishes by itself. */
-export async function stopSetAction(id: string): Promise<SetDetail | null> {
-  await stopSet(db(), id, { actor: "ops" });
-  return setDetail(db(), id);
 }

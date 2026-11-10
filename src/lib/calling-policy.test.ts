@@ -23,7 +23,7 @@ describe("dealerNumberRefusal", () => {
     expect(dealerNumberRefusal(OTHER, null, TESTING)).toBe(NUMBER_NOT_ALLOWED);
     expect(NUMBER_NOT_ALLOWED).toContain("ALLOWED_NUMBERS");
     expect(NUMBER_NOT_ALLOWED).toContain("NABZ_MODE=production");
-    expect(NUMBER_NOT_ALLOWED).toContain("premium Bolna API key");
+    expect(NUMBER_NOT_ALLOWED).toContain("NABZ_MODE=production");
   });
 
   it("in testing, refuses changing a dealer to another number", () => {

@@ -32,7 +32,6 @@ import { getSector, vocabLabel } from "@/lib/sectors/registry";
 import { AnswerRatesCard } from "./answer-rates-card";
 import { CallDialog } from "./call-dialog";
 import { CallReport } from "./call-report";
-import { SyncButton } from "./sync-button";
 
 export const metadata: Metadata = { title: "Calls" };
 
@@ -71,7 +70,7 @@ function viewHref(view: View): string {
 export default function CallsPage({ searchParams }: PageProps<"/ops/calls">) {
   return (
     <>
-      <PageHeader title="Calls" action={<SyncButton />} />
+      <PageHeader title="Calls" />
       <Suspense fallback={<LoadingCards rows={6} />}>
         <AnswerRatesCard />
       </Suspense>
@@ -183,7 +182,7 @@ async function CallsTable({ searchParams }: { searchParams: SearchParams }) {
                       )}
                     </td>
                     <td className={`${tdClass} num text-xs`}>{formatDuration(r.durationS)}</td>
-                    <td className={`${tdClass} num text-right text-xs`} title={`${cost.usd} on Bolna`}>
+                    <td className={`${tdClass} num text-right text-xs`} title={`${cost.usd} on the voice stack`}>
                       {cost.inr}
                     </td>
                     <td className={`${tdClass} text-right`}>

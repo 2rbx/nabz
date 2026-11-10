@@ -5,13 +5,13 @@ import { weekLabel } from "./domain/week";
  */
 
 /**
- * Rupees per US dollar used to show Bolna's charges (billed in US cents) in rupees. Approximate and
+ * Rupees per US dollar used to show a call's charges (billed in US cents) in rupees. Approximate and
  * fixed on purpose: costs stay comparable across weeks. The exact amount in dollars is always shown too.
  */
 export const USD_INR_RATE = 92;
 
 /**
- * What one survey call usually costs on Bolna, for estimates before a run: about 2 minutes at ~6¢ a
+ * What one survey call usually costs on the voice stack, for estimates before a run: about 2 minutes at ~6¢ a
  * minute, billed in 30-second pulses. Actual costs are recorded per call.
  */
 export const ESTIMATED_CALL_CENTS = 12;
@@ -26,7 +26,7 @@ export function formatDuration(seconds: number | null | undefined): string {
   return h > 0 ? `${h}:${String(m).padStart(2, "0")}:${s}` : `${m}:${s}`;
 }
 
-/** Bolna's cost (US cents) as rupees for display, with the exact dollar amount alongside. */
+/** A call's cost (US cents) as rupees for display, with the exact dollar amount alongside. */
 export function formatCost(cents: number | null | undefined): { inr: string; usd: string } {
   if (cents === null || cents === undefined || !Number.isFinite(cents)) return { inr: "—", usd: "—" };
   const usd = cents / 100;

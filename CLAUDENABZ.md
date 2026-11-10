@@ -2,7 +2,7 @@
 
 # Nabz
 
-Weekly demand indices for India's offline economy, built from short AI phone surveys (Bolna) of businesses.
+Weekly demand indices for India's offline economy, built from short AI phone surveys of businesses, run by a voice agent on Gnani's models (Prisma hears, Timbre speaks) with Claude holding the conversation.
 Vehicles are the first sector. Build spec: `../Nabz MVP Spec.md` (authoritative). Product background: `../Nabz PRD.md`; page layout and content: `../Nabz Product Mockup.html`.
 
 Visual style: modern minimal white + blue, light only, slate-50 page, white rounded-2xl cards with shadow-sm, one blue-600 accent, pill nav/buttons, pastel ring pills, Geist. The top bar has square full-height tabs and the wordmark logo everywhere; client pages also use bigger text in taller boxes (`BoxHeader`), while Ops keeps smaller text. Use the semantic tokens in `src/app/globals.css` (index values use the blue ↔ red `index-*` scale via `src/components/index/signal.tsx`) and the components in `src/components/ui.tsx`; never hard-code colours. No dark mode.
@@ -10,17 +10,17 @@ Visual style: modern minimal white + blue, light only, slate-50 page, white roun
 ## Hard rules
 
 - **`NABZ_MODE` decides who can be called** (`testing` by default, `src/lib/calling-policy.ts`). In testing, only `ALLOWED_NUMBERS` in `.env.local` can be added as dealers or called; any other number gets an error saying how to switch. In production, any valid number. That is the only difference between the modes. **The owner's copy stays in testing. Never set production, add to `ALLOWED_NUMBERS`, or call any other number without the owner's explicit permission for that specific use.** No real phone numbers in the repo: tests use made-up ones.
-- **Don't spend Bolna credits casually.** `CALLING_ENABLED` is off by default; daily cap $10. Develop against the mocked-Bolna tests. Real calls are deliberate, one at a time, and confirmed with the owner first.
-- **One real world.** Every dealer in the database is real and can be called, subject to the mode. There is no sample data and no `dataset` column. A new copy starts empty.
+- **Keep the spend caps.** Claude is capped at $9 and Gnani at 4,000 of the 5,000 programme credits (`src/lib/voice/budget.ts`; running totals in `.voice-budget.local.json`). Develop against the mocked tests. Real Gnani and Claude calls are deliberate, and confirmed with the owner first.
+- **Synthetic is marked.** Dealers are real unless their notes start "Synthetic demo": `pnpm voice:seed` adds made-up dealers with invalid phone numbers for demos. No real phone numbers or recordings in the repo, the demo or the entry. There is no `dataset` column.
 - **Before real dealers are called, the app must have opt-out, DND and calling hours** (the legal brief requires them; spec §10). They were removed for now, on the owner's decision. Production mode does not add them, and the README says so.
-- **Only calls from a set change data.** A **test call** (Test call in the Edit dealer pop-up, `placeTestCall` in `src/lib/bolna/dialer.ts`) is a real, paid call that creates no set, recipient or call row and carries no `nabz_call_ref`, so it can never reach the index or a survey freeze. Its only trace is a `dialer_log` row, which counts its estimate toward the daily spend cap.
+- **The Voice agent page changes no data.** The simulated call on Ops → Voice agent writes no set, recipient or call row. Calls enter the database only through `ingestExecution` (`src/lib/db/queries/ingest.ts`), which `pnpm voice:seed` uses.
 - **Client pages are live** (no release step yet): `/pulse` and `/heatmap` run the index engine (`src/lib/index/`) on every request over all usable calls. Loader: `src/lib/db/queries/index-data.ts`; page view: `src/lib/index/view.ts`.
 - **No made-up numbers.** Every number on the client pages comes from an answered call.
 - **Batches vs sets.** A **batch** is a saved list of dealers, normally one company × state cell ("Hero · Karnataka"); names are unique and a dealer is in **at most one batch** (both enforced by the database). A **set** (`sets` / `set_recipients`) is one run of a batch, its calls together; running it next week is another set. A batch with sets is archived, never deleted.
-- **Calling a batch: sets** (`src/lib/bolna/set-dialer.ts`, rules in `planSet`, `src/lib/calls/set-plan.ts`). Rows are called one at a time, in order, each with the agent for the dealer's language; the live page `/ops/calls/sets?set=<id>` drives it (`advanceSet` every 5 s), so closing it pauses the set. Every run calls everyone again. A many-at-once version is archived in `../archive/many-at-once/`.
+- **Sets are history.** A set is one run of a batch, created by `pnpm voice:seed` and read on `/ops/calls/sets`. There is no live dialer: the agent runs in a browser session, not on the phone network.
 - **Newest good call wins.** If a dealer is called again in a survey week, the index uses their newest usable call, whole (`latestPerDealer`, `src/lib/index/engine.ts`; `previousWeekAnswers`). The old call stays in Ops → Calls, marked Replaced.
 - **Clients never see a dealer.** No names or numbers on client pages or exports; brand × state cells below 3 dealers are suppressed, and so is **any single indicator** answered by fewer than 3 (engine v2: a cell of 5 where 1 answered loans hides loans). The audit log never stores personal data.
-- **Only `src/lib/bolna/` talks to Bolna** (ESLint enforces it), so every call passes the dialer's guards.
+- **Only `src/lib/gnani/` and `src/lib/claude/` talk to Gnani and Claude** (ESLint enforces it), so every request passes the budget guard.
 
 ## Architecture rules
 
@@ -61,9 +61,9 @@ pnpm check                    # typecheck + lint + all tests + production build
 pnpm test:unit | test:db      # db tests rebuild nabz_test from scratch; run one db test run at a time
 pnpm db:generate              # after schema changes (src/lib/db/schema); never `drizzle-kit push`
 pnpm db:migrate | db:sync | db:setup   # db:setup = migrate + sync
-pnpm agents:create            # create the agents in this key's Bolna account (from agents/definitions/, exported by call-lab/export-agents.ts) and save their ids to agents.local.json; never calls
-pnpm agents:sync              # after db:sync: snapshot the agents (src/lib/calls/agents.ts, or the ids in agents.local.json) into agent_versions; free GETs, never calls
-pnpm calls:sync | calls:watch  # collect call results from Bolna (once / every 30 s while calls are open) + the extraction fallback; reads only, never dials
+pnpm voice:smoke             # one tiny real call to each service (Timbre, Prisma, Haiku); prints what it cost against the caps
+pnpm voice:simulate          # a whole call with typed dealer replies and the real Claude (no Gnani credits unless --speak)
+pnpm voice:seed              # synthetic dealers and calls through Timbre, Prisma and the normal ingest (needs db:setup first); resumable
 pnpm db:reset --yes [--setup] # local nabz_dev only
 pnpm db:bootstrap             # one-time: role + databases + .env.local (needs .env.bootstrap.local)
 ```

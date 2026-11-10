@@ -45,7 +45,7 @@ describe("ingestExecution: a real completed call", () => {
         surveyId: s.surveyId,
         weekStart: WEEK,
         attempt: 1,
-        bolnaStatus: "completed",
+        executionStatus: "completed",
         statusRank: 10,
         derivedStatus: "completed",
         qaState: "auto_ok",
@@ -60,7 +60,7 @@ describe("ingestExecution: a real completed call", () => {
         },
       });
       expect(row!.rawExecution).toMatchObject({ id: e.id });
-      expect(row!.bolnaUpdatedAt?.toISOString()).toBe(new Date(e.updated_at as string).toISOString());
+      expect(row!.executionUpdatedAt?.toISOString()).toBe(new Date(e.updated_at as string).toISOString());
     });
   });
 
@@ -137,7 +137,7 @@ describe("ingestExecution: replays and order", () => {
       await ingestExecution(tx, e, ctx(e));
       const late = await ingestExecution(tx, { ...e, status: "ringing", updated_at: later(e, 5) }, ctx(e));
       expect(late.result).toBe("stale");
-      expect(await callOf(tx, e.id)).toMatchObject({ bolnaStatus: "completed", answeredCount: 5 });
+      expect(await callOf(tx, e.id)).toMatchObject({ executionStatus: "completed", answeredCount: 5 });
     });
   });
 
@@ -227,7 +227,7 @@ describe("ingestExecution: people's decisions stand", () => {
       expect(row!.answers).not.toHaveProperty("stock_days");
       // A removed answer is unclear, a response: the call stays completed, with one answer fewer.
       expect(row).toMatchObject({ derivedStatus: "completed", answeredCount: 4 });
-      // What Bolna returned is kept as it was.
+      // What the agent returned is kept as it was.
       expect(row!.extracted.stock_days).toMatchObject({ value: 10, status: "answered" });
     });
   });
@@ -312,7 +312,7 @@ describe("ingestExecution: linking and refusing", () => {
       expect(out.result).toBe("rejected");
       expect(await callOf(tx, e.id)).toBeUndefined();
       const [event] = await tx.select().from(executionEvents).where(eq(executionEvents.id, out.eventId));
-      expect(event).toMatchObject({ result: "rejected", bolnaStatus: "completed" });
+      expect(event).toMatchObject({ result: "rejected", executionStatus: "completed" });
       expect(event!.processedAt).not.toBeNull();
     });
   });

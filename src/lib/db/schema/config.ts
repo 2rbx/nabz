@@ -95,7 +95,7 @@ export const surveys = pgTable(
 );
 
 /**
- * Each configuration of a Bolna voice agent, per survey and language (`pnpm agents:sync` writes these
+ * Each configuration of a voice agent, per survey and language (`pnpm agents:sync` writes these
  * from src/lib/calls/agents.ts). Calls record the version they used. A changed agent, or a
  * new agent for a language, is a new row; the one it replaces is retired, never deleted.
  */
@@ -110,7 +110,7 @@ export const agentVersions = pgTable(
     language: text("language").$type<CallLanguage>().notNull(),
     /** The call-lab version that built the agent, e.g. "hi04". */
     label: text("label").notNull(),
-    bolnaAgentId: text("bolna_agent_id").notNull(),
+    agentRef: text("agent_ref").notNull(),
     version: integer("version").notNull(),
     config: jsonb("config").$type<Record<string, unknown>>().notNull(),
     configSha256: text("config_sha256").notNull(),
@@ -119,7 +119,7 @@ export const agentVersions = pgTable(
     retiredAt: tstz("retired_at"),
   },
   (t) => [
-    unique("agent_versions_agent_version_uq").on(t.bolnaAgentId, t.version),
+    unique("agent_versions_agent_version_uq").on(t.agentRef, t.version),
     // At most one current agent per survey and language: the one new calls use.
     uniqueIndex("agent_versions_current_uq")
       .on(t.surveyId, t.language)

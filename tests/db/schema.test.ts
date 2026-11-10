@@ -39,7 +39,7 @@ async function wiredCall(tx: Tx) {
       setId: set!.id,
       surveyId,
       weekStart: MONDAY,
-      bolnaStatus: "completed",
+      executionStatus: "completed",
       statusRank: 10,
       derivedStatus: "completed",
       initiatedAt: new Date("2026-10-27T06:00:00Z"),

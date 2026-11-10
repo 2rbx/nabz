@@ -1,6 +1,6 @@
 import { count, eq } from "drizzle-orm";
 import { afterAll, describe, expect, it } from "vitest";
-import type { BolnaExecution } from "../../src/lib/bolna/client";
+import type { VoiceExecution } from "../../src/lib/calls/execution";
 import ta02Reextracted from "../../src/lib/calls/ingest/fixtures/ta02-reextracted.json";
 import type { Db } from "../../src/lib/db/client";
 import { listCalls, reviewCounts } from "../../src/lib/db/queries/calls";
@@ -17,7 +17,7 @@ afterAll(() => pool.end());
 const OPS = { actor: "ops" };
 
 /** Ingests a fixture execution (optionally changed) for a new real dealer; returns the stored call. */
-async function ingested(tx: Tx, name: string, change: (e: BolnaExecution) => BolnaExecution = (e) => e, phone?: string) {
+async function ingested(tx: Tx, name: string, change: (e: VoiceExecution) => VoiceExecution = (e) => e, phone?: string) {
   const s = await setup(tx, { phone });
   const e = change(execution(name, s.callRef));
   const { callId } = await ingestExecution(tx, e, ctx(e));
@@ -25,7 +25,7 @@ async function ingested(tx: Tx, name: string, change: (e: BolnaExecution) => Bol
 }
 
 /** en01 with stock extracted as 900 days: over the maximum, so the call is held (invalid_answer). */
-const stockOutOfRange = (e: BolnaExecution): BolnaExecution => {
+const stockOutOfRange = (e: VoiceExecution): VoiceExecution => {
   const pulse = (e.extracted_data as { Pulse: Record<string, Record<string, unknown>> }).Pulse;
   return { ...e, extracted_data: { Pulse: { ...pulse, stock_days: { ...pulse.stock_days, subjective: "900" } } } };
 };

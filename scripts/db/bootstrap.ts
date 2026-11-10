@@ -94,8 +94,6 @@ runScript(async () => {
     ["DATABASE_URL_TEST", url("nabz_test")],
     ["NABZ_MODE", existing.get("NABZ_MODE") ?? "testing"],
     ["ALLOWED_NUMBERS", existing.get("ALLOWED_NUMBERS") ?? ""],
-    ["CALLING_ENABLED", existing.get("CALLING_ENABLED") ?? "false"],
-    ["BOLNA_DAILY_SPEND_CAP_USD", existing.get("BOLNA_DAILY_SPEND_CAP_USD") ?? "10"],
   ];
   const known = new Set(values.map(([k]) => k));
   const extra = [...existing].filter(([k]) => !known.has(k));

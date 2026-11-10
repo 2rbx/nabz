@@ -6,9 +6,9 @@ import { parseMissingReason, STATUS_FIELD_SUFFIX } from "../answer-status";
 import type { StoredExtraction } from "../report";
 
 /**
- * Reads Bolna's extraction for one call into our per-question answers. Pure.
+ * Reads the agent's extraction for one call into our per-question answers. Pure.
  *
- * Bolna puts every field in `extracted_data.Pulse.<name>` as
+ * The extraction puts every field in `extracted_data.Pulse.<name>` as
  * `{ objective, subjective, confidence, validation: { is_valid } }`: pre-defined (choice) fields
  * answer in `objective`, free-text and numeric fields in `subjective`, and every numeric field has a
  * pre-defined `<name>_status` companion saying why it's empty (spec §5.1).
@@ -19,7 +19,7 @@ import type { StoredExtraction } from "../report";
  * an explicit reason, or nothing at all, is never a failed value.
  */
 
-/** One Bolna extraction field, as far as we read it. */
+/** One extraction field, as far as we read it. */
 type PulseField = {
   objective?: unknown;
   subjective?: unknown;
@@ -34,7 +34,7 @@ export type ReadPulse = {
   outcome: Outcome | null;
   /** When the dealer asked to be called back, in their words. */
   callbackTime: string | null;
-  /** True when Bolna returned no Pulse fields at all (its extraction didn't run). */
+  /** True when the agent returned no Pulse fields at all (its extraction didn't run). */
   empty: boolean;
 };
 
@@ -56,7 +56,7 @@ function confidenceOf(f: PulseField | null): number | null {
 }
 
 /**
- * A reason word in place of an answer: our three missing reasons, Bolna's "unclear", and v01's
+ * A reason word in place of an answer: our three missing reasons, the agent's "unclear", and v01's
  * legacy "not_answered" (which meant the same as not asked).
  */
 function reasonOf(raw: string): Exclude<AnswerStatus, "answered"> | null {

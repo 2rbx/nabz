@@ -107,7 +107,7 @@ export const sets = pgTable(
   ],
 );
 
-/** Who a set was for, and why anyone was left out. `call_ref` is sent to Bolna and echoed back. */
+/** Who a set was for, and why anyone was left out. `call_ref` is sent to the voice agent and echoed back. */
 export const setRecipients = pgTable(
   "set_recipients",
   {
@@ -121,7 +121,7 @@ export const setRecipients = pgTable(
     callRef: uuid("call_ref").notNull().defaultRandom().unique("set_recipients_call_ref_uq"),
     included: boolean("included").notNull(),
     exclusionReason: text("exclusion_reason").$type<ExclusionReason>(),
-    /** Why Bolna wouldn't place this row's call. The set moves on and never redials it. */
+    /** Why the voice agent wouldn't place this row's call. The set moves on and never redials it. */
     dialError: text("dial_error"),
     createdAt: createdAt(),
   },
@@ -137,7 +137,7 @@ export const setRecipients = pgTable(
 export const QA_STATES = ["pending", "auto_ok", "needs_review", "approved", "excluded"] as const;
 export type QaState = (typeof QA_STATES)[number];
 
-/** Per extracted field: what Bolna returned, the value we parsed, and Bolna's confidence/validation. */
+/** Per extracted field: what the agent returned, the value we parsed, and the agent's confidence/validation. */
 export type ExtractedField = {
   raw: unknown;
   value: string | number | null;
@@ -148,7 +148,7 @@ export type ExtractedField = {
 };
 
 /**
- * One row per Bolna execution. `answers` holds the effective value of each question after validation
+ * One row per execution. `answers` holds the effective value of each question after validation
  * and ops overrides; it is the only thing the index engine reads.
  */
 export const calls = pgTable(
@@ -172,8 +172,8 @@ export const calls = pgTable(
     attempt: integer("attempt").notNull().default(1),
     weekStart: weekStart().notNull(),
 
-    bolnaStatus: text("bolna_status").notNull(),
-    /** Position of bolna_status in the call lifecycle; updates never move a call backwards. */
+    executionStatus: text("execution_status").notNull(),
+    /** Position of execution_status in the call lifecycle; updates never move a call backwards. */
     statusRank: smallint("status_rank").notNull(),
     derivedStatus: text("derived_status").$type<DerivedStatus>().notNull(),
     outcome: text("outcome").$type<Outcome>(),
@@ -198,7 +198,7 @@ export const calls = pgTable(
     extractionSource: text("extraction_source").$type<ExtractionSource>(),
     /**
      * What the fallback re-extraction returned (`extracted_data`), kept so a replay gives the same
-     * answers. Only set when Bolna's own extraction came back empty.
+     * answers. Only set when the agent's own extraction came back empty.
      */
     reextractedData: jsonb("reextracted_data").$type<Record<string, unknown>>(),
     /** When the fallback ran: set even if it came back empty, so it runs once per call. */
@@ -209,9 +209,9 @@ export const calls = pgTable(
     qaReviewedBy: text("qa_reviewed_by"),
     qaNote: text("qa_note"),
 
-    /** The full execution object from Bolna, for replays and debugging. */
+    /** The full execution object from the voice agent, for replays and debugging. */
     rawExecution: jsonb("raw_execution").$type<Record<string, unknown>>(),
-    bolnaUpdatedAt: tstz("bolna_updated_at"),
+    executionUpdatedAt: tstz("execution_updated_at"),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
   },
@@ -280,14 +280,14 @@ export const answerOverrides = pgTable(
 
 export const EVENT_RESULTS = ["ingested", "stale", "unlinked", "rejected", "error"] as const;
 
-/** Every execution received from Bolna, kept for audit and replay. */
+/** Every execution received from the voice agent, kept for audit and replay. */
 export const executionEvents = pgTable(
   "execution_events",
   {
     id: pk(),
     receivedAt: tstz("received_at").notNull().defaultNow(),
     executionId: text("execution_id"),
-    bolnaStatus: text("bolna_status"),
+    executionStatus: text("execution_status"),
     payload: jsonb("payload").$type<Record<string, unknown>>(),
     processedAt: tstz("processed_at"),
     result: text("result").$type<(typeof EVENT_RESULTS)[number]>(),
@@ -319,7 +319,7 @@ export const dialerLog = pgTable(
       .notNull()
       .default(0),
     httpStatus: integer("http_status"),
-    bolnaRef: text("bolna_ref"),
+    executionRef: text("execution_ref"),
     actor: text("actor").notNull(),
   },
   (t) => [

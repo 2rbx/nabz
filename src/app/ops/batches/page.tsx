@@ -10,7 +10,6 @@ import { ESTIMATED_CALL_CENTS, formatCost, formatIstDay, formatWeekShort } from 
 import { getState } from "@/lib/reference/geo";
 import { getSector, vocabLabel } from "@/lib/sectors/registry";
 import { BatchEditor } from "./batch-editor";
-import { CallBatch } from "./call-batch";
 import { RemoveBatch } from "./remove-batch";
 
 export const metadata: Metadata = { title: "Batches" };
@@ -148,7 +147,6 @@ function Card({ card }: { card: BatchCard }) {
       <div className="flex flex-wrap justify-end gap-2 border-t border-line-soft pt-4">
         <RemoveBatch id={card.id} name={card.name} hasSets={card.setCount > 0} />
         <BatchEditor batch={{ id: card.id, name: card.name, notes: card.notes }} />
-        {card.members > 0 && !running && <CallBatch id={card.id} name={card.name} />}
         {running && card.lastSet && (
           <Link
             href={{ pathname: "/ops/calls/sets", query: { set: card.lastSet.id } }}

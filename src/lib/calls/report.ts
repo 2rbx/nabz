@@ -97,7 +97,7 @@ export const NOT_ANSWERED: ReadonlySet<string> = new Set(["no_answer", "busy", "
 export const NOT_FINISHED: ReadonlySet<string> = new Set(["queued", "in_progress"]);
 
 /**
- * Who ended the call, from Bolna's telephony data. Seen on our calls: "Callee" (the dealer hung up),
+ * Who ended the call, from the call's telephony data. Seen on our calls: "Callee" (the dealer hung up),
  * "Plivo" with `end_call_tool` (the agent ended it) or `inactivity_timeout` (silence), "Carrier"
  * (the network, e.g. a rejected call).
  */
@@ -126,7 +126,7 @@ const FLAG_TEXT: Record<string, string> = {
   straightlining: "Every answer was the neutral one",
   bookings_mismatch: "Bookings trend disagrees with last week's count",
   stock_jump: "Days of stock changed sharply from last week",
-  extraction_missing: "Bolna returned no answers for this conversation",
+  extraction_missing: "The agent returned no answers for this conversation",
   reextracted: "Answers read from the transcript",
 };
 

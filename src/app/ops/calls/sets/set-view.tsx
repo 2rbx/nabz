@@ -1,49 +1,11 @@
-"use client";
-
 import Link from "next/link";
-import { useEffect, useRef, useState, useTransition } from "react";
-import { Button, linkClass, Panel, Pill, TableScroll, tableClass, tdClass, theadRowClass, thClass } from "@/components/ui";
+import { linkClass, Panel, Pill, TableScroll, tableClass, tdClass, theadRowClass, thClass } from "@/components/ui";
 import { setStatusLabel } from "@/lib/calls/set-status";
 import type { SetDetail } from "@/lib/db/queries/sets";
 import { formatCost, formatIstDateTime, formatWeekShort } from "@/lib/format";
-import { advanceSetAction, stopSetAction } from "../actions";
 
-const STEP_EVERY_MS = 5000;
-
-/**
- * One set, row by row. While the set is live this page is what moves it on: every few seconds it asks
- * for the next step, so the highlighted row is the one being called. Closing the page pauses the set,
- * and reopening it carries on.
- */
-export function LiveSet({ id, initial }: { id: string; initial: SetDetail }) {
-  const [detail, setDetail] = useState(initial);
-  const [stopping, startStop] = useTransition();
-  const busy = useRef(false);
-  const live = detail.live;
-
-  useEffect(() => {
-    if (!live) return;
-    let alive = true;
-    const step = async () => {
-      if (busy.current) return;
-      busy.current = true;
-      try {
-        const next = await advanceSetAction(id);
-        if (alive && next) setDetail(next);
-      } catch {
-        // A failed step is retried on the next tick.
-      } finally {
-        busy.current = false;
-      }
-    };
-    void step();
-    const timer = setInterval(() => void step(), STEP_EVERY_MS);
-    return () => {
-      alive = false;
-      clearInterval(timer);
-    };
-  }, [id, live]);
-
+/** One set, row by row: each dealer in the batch and how their call went. */
+export function SetView({ id, detail }: { id: string; detail: SetDetail }) {
   const { set, rows } = detail;
   const status = setStatusLabel(set.status);
 
@@ -70,22 +32,6 @@ export function LiveSet({ id, initial }: { id: string; initial: SetDetail }) {
           <Link href={{ pathname: "/ops/calls", query: { set: id } }} className={`${linkClass} text-sm`}>
             See these calls
           </Link>
-          {live && (
-            <Button
-              type="button"
-              variant="secondary"
-              size="sm"
-              disabled={stopping}
-              onClick={() =>
-                startStop(async () => {
-                  const next = await stopSetAction(id);
-                  if (next) setDetail(next);
-                })
-              }
-            >
-              {stopping ? "Stopping…" : "Stop"}
-            </Button>
-          )}
         </div>
       </div>
       <TableScroll>

@@ -15,14 +15,13 @@ import {
   thClass,
   trClass,
 } from "@/components/ui";
-import { AGENTS } from "@/lib/calls/agents";
 import { db } from "@/lib/db/client";
-import { listAgents } from "@/lib/db/queries/agents";
 import { dataTotals } from "@/lib/db/queries/ops";
 import { maskPhone } from "@/lib/domain/phone";
-import { callingScope, env } from "@/lib/env";
-import { formatIstDateTime } from "@/lib/format";
-import { CALL_LANGUAGES } from "@/lib/reference/languages";
+import { EXTRACT_MODEL, REPLY_MODEL } from "@/lib/claude/client";
+import { callingScope, voiceEnv } from "@/lib/env";
+import { BUDGET_LIMITS } from "@/lib/voice/budget";
+import { fileBudgetStore } from "@/lib/voice/runtime";
 
 export const metadata: Metadata = { title: "System" };
 
@@ -51,38 +50,38 @@ export default function SystemPage() {
 
 async function SystemTables() {
   await io();
-  const config = env();
+  const keys = voiceEnv();
   const scope = callingScope();
-  const database = db();
-  const [totals, agents] = await Promise.all([dataTotals(database), listAgents(database)]);
+  const spend = fileBudgetStore().load();
+  const totals = await dataTotals(db());
 
   return (
     <>
       <div className="grid gap-6 md:grid-cols-2">
         <Panel className="grid content-start gap-4">
-          <CardHeader title="Calling safety" />
+          <CardHeader title="Voice agent" />
           <KeyValues
             roomy
             rows={[
+              ["Gnani API key", keys.GNANI_API_KEY ? <Pill tone="accent">Set</Pill> : <Pill>Not set</Pill>],
+              ["Claude API key", keys.CLAUDE_API_KEY ? <Pill tone="accent">Set</Pill> : <Pill>Not set</Pill>],
               [
-                "Calling",
-                config.CALLING_ENABLED ? (
-                  <Pill tone="warn" dot>
-                    Enabled
-                  </Pill>
-                ) : (
-                  <Pill tone="good" dot>
-                    Off
-                  </Pill>
-                ),
+                "Claude spend",
+                <span key="c" className="num">
+                  ${spend.claudeUsd.toFixed(3)} of ${BUDGET_LIMITS.claudeCapUsd}
+                </span>,
+              ],
+              [
+                "Gnani credits (estimate)",
+                <span key="g" className="num">
+                  {spend.gnaniCredits.toFixed(1)} of {BUDGET_LIMITS.gnaniCapCredits.toLocaleString("en-IN")}
+                </span>,
               ],
               ["Mode", scope.mode === "production" ? <Pill tone="warn">Production</Pill> : <Pill tone="accent">Testing</Pill>],
               [
                 "Allowed numbers",
                 scope.mode === "production" ? "Any number" : scope.allowedNumbers.map(maskPhone).join(", ") || "None",
               ],
-              ["Daily spend cap", `$${config.BOLNA_DAILY_SPEND_CAP_USD.toFixed(2)}`],
-              ["Bolna API key", config.BOLNA_API_KEY ? <Pill tone="accent">Set</Pill> : <Pill>Not set</Pill>],
             ]}
           />
         </Panel>
@@ -101,65 +100,32 @@ async function SystemTables() {
         </Panel>
       </div>
 
-      <AgentsCard agents={agents} />
+      <TableCard title="Models">
+        <table className={`${tableClass} min-w-[560px]`}>
+          <thead>
+            <tr className={`${theadRowClass} border-t`}>
+              <th className={thClass}>Job</th>
+              <th className={thClass}>Model</th>
+            </tr>
+          </thead>
+          <tbody>
+            {MODELS.map(([job, model]) => (
+              <tr key={job} className={trClass}>
+                <td className={tdClass}>{job}</td>
+                <td className={`${tdClass} num text-xs text-muted`}>{model}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </TableCard>
     </>
   );
 }
 
-/**
- * Each call language's agent: the registry in code (src/lib/calls/agents.ts) next to what
- * `pnpm agents:sync` last stored, whose id may be from this account's own `pnpm agents:create`. A registry
- * entry the database doesn't have yet shows as not synced.
- */
-function AgentsCard({ agents }: { agents: Awaited<ReturnType<typeof listAgents>> }) {
-  const rows = AGENTS.map((entry) => {
-    const stored = agents.find(
-      (a) =>
-        a.surveySlug === entry.survey.slug &&
-        a.surveyVersion === entry.survey.version &&
-        a.language === entry.language,
-    );
-    const language = CALL_LANGUAGES.find((l) => l.code === entry.language);
-    return { entry, language, stored: stored?.label === entry.label ? stored : null };
-  });
-  return (
-    <TableCard title="Call agents">
-      <table className={`${tableClass} min-w-[720px]`}>
-        <thead>
-          <tr className={`${theadRowClass} border-t`}>
-            <th className={thClass}>Language</th>
-            <th className={thClass}>Lab version</th>
-            <th className={thClass}>Bolna agent</th>
-            <th className={thClass}>Synced</th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map(({ entry, language, stored }) => (
-            <tr key={`${entry.survey.slug}-${entry.survey.version}-${entry.language}`} className={trClass}>
-              <td className={tdClass}>
-                <div className="font-medium">{language?.name ?? entry.language}</div>
-                {language && language.label !== language.name && (
-                  <div className="text-xs text-faint">{language.label}</div>
-                )}
-              </td>
-              <td className={`${tdClass} num text-xs`}>{entry.label}</td>
-              <td className={`${tdClass} num text-xs text-muted`} title={stored?.bolnaAgentId ?? entry.bolnaAgentId}>
-                {(stored?.bolnaAgentId ?? entry.bolnaAgentId).slice(0, 8)}…
-              </td>
-              <td className={`${tdClass} text-xs`}>
-                {stored ? (
-                  <>
-                    <div>{formatIstDateTime(stored.syncedAt)}</div>
-                    <div className="num text-faint">version {stored.version}</div>
-                  </>
-                ) : (
-                  <Pill tone="warn">Not synced</Pill>
-                )}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </TableCard>
-  );
-}
+/** What the voice agent runs on. */
+const MODELS: [job: string, model: string][] = [
+  ["Hears the dealer (speech to text)", "Gnani Prisma · prisma-v3.0"],
+  ["Speaks the questions (text to speech)", "Gnani Timbre · timbre-v2.5"],
+  ["Holds the conversation", `Claude · ${REPLY_MODEL}`],
+  ["Reads the answers out of the call", `Claude · ${EXTRACT_MODEL}`],
+];

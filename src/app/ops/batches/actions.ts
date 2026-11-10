@@ -1,8 +1,6 @@
 "use server";
 
 import { refresh } from "next/cache";
-import { dialerConfigFromEnv } from "@/lib/bolna/server";
-import { type SetPreview, setPreview, type StartSetResult, startSet } from "@/lib/bolna/set-dialer";
 import { type BatchFieldErrors, parseBatchForm } from "@/lib/batches/form";
 import { db } from "@/lib/db/client";
 import {
@@ -56,20 +54,5 @@ export async function removeBatchAction(batchId: unknown): Promise<RemoveBatchRe
   if (!id) return { ok: false, error: "This batch no longer exists." };
   const result = await removeBatch(db(), id, { actor: ACTOR });
   if (result.ok) refresh();
-  return result;
-}
-
-/** Who pressing Call would call, and why anyone is skipped. Writes nothing. */
-export async function previewSetAction(batchId: unknown): Promise<SetPreview | null> {
-  const id = asId(batchId);
-  return id ? setPreview(db(), id, dialerConfigFromEnv()) : null;
-}
-
-/** Creates a set. Its calls are placed by the set's live page, one at a time. */
-export async function startSetAction(batchId: unknown): Promise<StartSetResult> {
-  const id = asId(batchId);
-  if (!id) return { status: "refused", message: "This batch no longer exists." };
-  const result = await startSet(db(), id, dialerConfigFromEnv());
-  refresh();
   return result;
 }
