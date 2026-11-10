@@ -13,6 +13,7 @@ const AREA_NAV: Record<Area, NavItem[]> = {
     { href: "/ops/dealers", label: "Dealers" },
     { href: "/ops/batches", label: "Batches" },
     { href: "/ops/calls", label: "Calls" },
+    { href: "/ops/voice", label: "Voice agent" },
     { href: "/ops/system", label: "System" },
   ],
 };

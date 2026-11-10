@@ -43,3 +43,5 @@ next-env.d.ts
 
 # ids of agents made by pnpm agents:create
 /agents.local.json
+/.voice-budget.local.json
+/.voice-cache/

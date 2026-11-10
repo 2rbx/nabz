@@ -61,6 +61,24 @@ const eslintConfig = defineConfig([
     },
   },
   {
+    // Gnani and Claude are reachable only through their guarded clients, which check the spend caps.
+    files: ["src/**/*.{ts,tsx}", "scripts/**/*.ts"],
+    ignores: ["src/lib/gnani/**", "src/lib/claude/**"],
+    rules: {
+      "no-restricted-syntax": [
+        "error",
+        {
+          selector: "Literal[value=/api\\.vachana\\.ai|api\\.anthropic\\.com/i]",
+          message: "Gnani and Claude are only reachable through src/lib/gnani and src/lib/claude (the budget guards).",
+        },
+        {
+          selector: "TemplateElement[value.raw=/api\\.vachana\\.ai|api\\.anthropic\\.com/i]",
+          message: "Gnani and Claude are only reachable through src/lib/gnani and src/lib/claude (the budget guards).",
+        },
+      ],
+    },
+  },
+  {
     files: PURE_DIRS.map((dir) => `${dir.replace("/**", "")}/**/*.{ts,tsx}`),
     rules: {
       "no-restricted-imports": [

@@ -11,6 +11,9 @@ export const AGENTS_LOCAL_FILE = "agents.local.json";
 export function loadLocalEnv(file = ".env.local"): void {
   const path = resolve(process.cwd(), file);
   if (existsSync(path)) process.loadEnvFile(path);
+  // Keys placed in plain .env (the Gnani and Claude keys) are read too; .env.local, loaded first, wins.
+  const plain = resolve(process.cwd(), ".env");
+  if (file === ".env.local" && existsSync(plain)) process.loadEnvFile(plain);
 }
 
 /** Runs an async script, reporting failures with a non-zero exit code. */

@@ -1,8 +1,27 @@
 # Nabz
 
+**Great Indian AI Internship Challenge entry:** [one-page pitch](PITCH.md) · [demo video](docs/demo.mp4) · [full write-up](docs/gnani-entry.md) · [the Gnani voice agent](#nabz-on-gnani-the-voice-agent-great-indian-ai-internship-challenge)
+
 Weekly demand indices for India's offline economy, built from short AI phone surveys of businesses.
 
 The first sector is vehicles. A Bolna voice agent calls dealers in their own language and asks about this week's enquiries, bookings, stock, discounts and loan rejections. Their answers become a 0–100 Demand index by brand and state, with margins of error.
+
+## Nabz on Gnani: the voice agent (Great Indian AI Internship Challenge)
+
+The call agent here is built on **Gnani's models**, with no telephony vendor in the loop:
+
+| Job | Model | Where |
+| --- | --- | --- |
+| Hear the dealer, including noisy phone audio and Hinglish | **Gnani Prisma** (speech to text, `prisma-v3.0`) | `src/lib/gnani/client.ts` |
+| Speak the questions in Hindi or English | **Gnani Timbre** (text to speech, `timbre-v2.5`) | `src/lib/gnani/client.ts` |
+| Run the conversation, then read the answers out of the transcript | Claude (Haiku 5.5 for the dialogue, Sonnet 5.5 for extraction) | `src/lib/claude/client.ts`, `src/lib/voice/agent.ts` |
+
+The agent asks the survey's six questions from the survey definition, so what it asks is exactly what the index scores. A finished call becomes the same execution object the rest of the app already reads (`buildExecution`), so quality checks, the index engine and the client pages are unchanged.
+
+- **Try it:** `pnpm dev`, then Ops → Voice agent. Speak (or type) as the dealer; the agent answers aloud.
+- **Seed the demo:** `pnpm voice:seed` plays 80 calls end to end (a Claude dealer with known answers, voiced by Timbre, heard by Prisma through line noise), stores them through the normal ingest and reports how many answers match what the dealer was told to say.
+- **Synthetic only:** every dealer is made up, with an invalid phone number and a note saying so. No real number is dialled and no real recording is used. The agent runs in a browser session, not over the phone network.
+- **Spend is capped in code:** Claude at $9 and Gnani at 4,000 of the 5,000 programme credits. Every request checks the cap first and refuses to send if it would be passed (`src/lib/voice/budget.ts`).
 
 ## What it looks like
 

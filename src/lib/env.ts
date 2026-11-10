@@ -46,6 +46,10 @@ export const EnvSchema = z
     BOLNA_DAILY_SPEND_CAP_USD: z.coerce.number().positive().max(CALLING_LIMITS.maxDailySpendUsd).default(10),
 
     BOLNA_API_KEY: z.string().min(1).optional(),
+
+    /** The Gnani voice agent (Prisma speech to text, Timbre text to speech) and the Claude brain behind it. */
+    GNANI_API_KEY: z.string().min(1).optional(),
+    CLAUDE_API_KEY: z.string().min(1).optional(),
   })
   .superRefine((env, ctx) => {
     if (env.CALLING_ENABLED && !env.BOLNA_API_KEY) {
@@ -58,6 +62,16 @@ export const EnvSchema = z
   });
 
 export type Env = z.infer<typeof EnvSchema>;
+
+/** Just the voice agent's keys, so it runs without a database. */
+export const VoiceEnvSchema = z.object({
+  GNANI_API_KEY: z.string().min(1).optional(),
+  CLAUDE_API_KEY: z.string().min(1).optional(),
+});
+
+export function voiceEnv(source: Record<string, string | undefined> = process.env) {
+  return VoiceEnvSchema.parse(Object.fromEntries(Object.entries(source).filter(([, v]) => v)));
+}
 
 /** Parses an environment object. Exported for tests; the app uses env(). */
 export function parseEnv(source: Record<string, string | undefined>): Env {
