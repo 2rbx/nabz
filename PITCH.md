@@ -1,26 +1,32 @@
-# Nabz: a voice agent that tunes into Bharat's economy
+# Nabz
+## Bharat's economy talks. Gnani listens.
 
-**One line:** Nabz calls dealers in their own language, asks six short questions, and turns the answers into a weekly 0–100 demand index by brand and state.
+> **The dealer knew first. The market found out on results day.**
+> On 1 Oct 2026, Bajaj Auto sold 5,38,443 units against ~5,70,000 expected, and the stock fell ~8% in a morning. Every showroom had seen the slowdown for weeks. Nobody asked them.
 
-## The problem
-Demand moves at the shop counter, and only the dealer sees it. Official numbers arrive weeks later, and makers count what they ship, not what sells. A 90-second weekly call in the dealer's language gets answers a form never will, but doing those calls by hand does not scale.
+**Nabz turns 90-second AI voice calls to dealers into a weekly demand index for India, by brand and state, in 48 hours. Built on Gnani Prisma + Timbre.**
 
-## The solution
-A voice agent built on **Gnani's models**:
-- **Prisma** (speech to text) hears the dealer, through noisy phone audio and Hindi mixed with English.
-- **Timbre** (text to speech) speaks each question in Hindi or English.
-- **Claude** runs the conversation and reads the transcript into typed answers.
+### The gap
+- India's best-known PMI panel covers **~400 manufacturers and 0 dealers.**
+- Makers count shipments, not sales. Dealers sit on **~40 days of stock** against ~21 ideal.
+- Ola Electric reported **25,000+ orders** in Feb 2025; Vahan registered **8,647.**
+- Official sales data is **monthly and after the fact.**
 
-The agent says it is an AI, asks exactly what the index scores, accepts "I don't know" without pushing, and never invents an answer. Calls are checked, scored, and shown on a Weekly Pulse and a Brand × state heatmap. Clients never see a dealer's name or number, and cells with fewer than 3 dealers are hidden.
+### Why voice, and why Gnani
+A dealer ignores a survey but answers a **90-second call in his own language**, usually Hinglish over showroom noise. **Prisma** hears code-mixed speech on noisy phone lines, and **Timbre** gives the agent a natural Hindi voice. Without Indic voice AI, this product cannot exist.
 
-## Who it is for
-Funds and analysts who want a leading read on demand, manufacturers and suppliers who need to know what actually sells, and dealers, who would get a weekly read of their own area back.
+### What works today
+- **Voice agent:** Timbre speaks, Prisma hears, Claude runs the dialogue. It says it is an AI and asks six short questions on enquiries, bookings, stock days, discounts and loan rejections.
+- **Answer engine:** every answer becomes a checked field; unanswered is marked, never guessed. Every call keeps its transcript, and a busy dealer's callback time is noted.
+- **Ops console:** add dealers, group them by brand × state, review each call.
+- **Client dashboard:** a weekly index (50 = no change) by brand × state, with a margin of error. Cells under 3 dealers are hidden and no dealer is ever named.
 
-## Proof
-All data is synthetic: no real number was dialled and no real recording used. In 80 complete calls (40 made-up dealers, two weeks, 8 brand × state cells) with Timbre-voiced dealers, 4% line noise and Prisma transcription, **471 of 480 answers (98.1%) matched what each dealer was told to say.** The whole run cost about $0.79 of Claude and about 160 of 5,000 programme credits, with both spend caps enforced in code.
+All demo data is synthetic. The demo shows a live Hindi call that ends in a callback, partly answered and marked partial.
 
-## Honest limits
-The agent runs in a browser session, not on the phone network. Accuracy is measured on synthetic dealers, so real dealers need a pilot. Claude does the reasoning because Gnani's language model is not on the API yet.
+### Who pays
+Fund and brokerage analysts (the sales miss before results), carmakers' strategy teams (rivals' stock and schemes, city by city), and lenders (early warning on dealer stress). Pricing hypothesis: ₹2L per 300-dealer check (~₹25k modelled cost to run), **50–80% cheaper** than trade-research diligence.
 
-## Try it
-`pnpm dev`, then Ops → Voice agent. See `README.md` for setup and `docs/gnani-entry.md` for the full write-up.
+### The moat, and where it goes
+Every week adds history to every town; a rival starts at zero. **Our scored track record can't be bought later.** Vehicles today, then paint, cement, farm inputs, chemists, kirana: **same engine, every counter in Bharat.**
+
+*Sources: Kotak Neo (Oct & May 2026) · S&P Global HSBC India PMI (May 2026) · Times Drive (Feb 2025) · #GnaniAI*
